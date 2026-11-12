@@ -17,8 +17,12 @@
 */
 
 pub mod helper;
+
 use std::fs;
 use std::io;
+
+use crate::helper::StatusCodes;
+use colored::Colorize;
 
 /// Stores the components of the arguments as a struct.
 #[derive(Debug)]
@@ -56,13 +60,12 @@ pub fn read_content(filename: &str) -> Result<String, io::Error> {
 /// Parse the configuration options passed through the command line and return a struct which
 /// contains references to the values parsed.
 /// Returns Option\<Args\> to allow the caller to handle errors.
-pub fn parse_configs(args: &[String]) -> Option<Args<'_>> {
+pub fn parse_configs(args: &[String]) -> Result<Args<'_>, StatusCodes> {
     // Args contains references that are valid for lifetime 'a
     if args.len() < 3 {
-        helper::usage();
-        return None;
+        let usage_message = helper::usage();
+        return Err(StatusCodes::Failure(1, usage_message));
     } else if args.len() > 3 {
-        use colored::Colorize;
         eprintln!(
             "{}",
             "Extraneous configurations were found. Discarding them."
@@ -70,5 +73,26 @@ pub fn parse_configs(args: &[String]) -> Option<Args<'_>> {
                 .yellow()
         )
     }
-    Some(Args::new(&args[0], &args[1], &args[2]))
+    Ok(Args::new(&args[0], &args[1], &args[2]))
+}
+
+pub fn run(args: Args) -> Result<(), StatusCodes> {
+    let contents = match read_content(args.path()) {
+        Ok(contents) => contents,
+        Err(e) => {
+            let message = format!(
+                "Failed to read `{}`. Error: {}",
+                args.path(),
+                e.to_string().bold().red()
+            );
+            return Err(StatusCodes::Failure(2, message));
+        }
+    };
+
+    println!("{} contains that following content:", args.path().blue());
+
+    for line in contents.split("\n") {
+        println!("\t{}", line);
+    }
+    Ok(())
 }

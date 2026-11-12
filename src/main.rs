@@ -20,14 +20,19 @@ pub mod helper;
 use std::env;
 
 use colored::Colorize;
+use std::process::ExitCode;
 
-use crate::helper::StatusCodes;
+use minigrep::helper::StatusCodes;
 
-fn main() -> StatusCodes {
+fn main() -> ExitCode {
     let args: Vec<String> = env::args().collect();
 
-    let Some(args) = minigrep::parse_configs(&args) else {
-        return StatusCodes::Failure(1, String::from("Usage Error"));
+    let args = match minigrep::parse_configs(&args) {
+        Ok(args) => args,
+        Err(StatusCodes::Failure(code, msg)) => {
+            eprintln!("{}", msg);
+            return ExitCode::from(code);
+        }
     };
 
     println!(
@@ -36,26 +41,11 @@ fn main() -> StatusCodes {
         args.path().bold().magenta(),
     );
 
-    let contents = match minigrep::read_content(args.path()) {
-        Ok(contents) => contents,
-        Err(e) => {
-            eprintln!(
-                "{}",
-                format!(
-                    "Failed to read `{}`. Error: {}",
-                    args.path(),
-                    e.to_string().bold()
-                )
-                .red()
-            );
-            return StatusCodes::Failure(2, String::from("Couldn't read file contents"));
+    match minigrep::run(args) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(StatusCodes::Failure(code, msg)) => {
+            eprintln!("{}", msg);
+            return ExitCode::from(code);
         }
-    };
-
-    println!("{} contains that following content:", args.path().blue());
-
-    for line in contents.split("\n") {
-        println!("\t{}", line);
     }
-    StatusCodes::Success
 }

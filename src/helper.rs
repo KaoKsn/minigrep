@@ -20,7 +20,7 @@ use std::process::{ExitCode, Termination};
 
 use colored::Colorize;
 
-pub fn usage() {
+pub fn usage() -> String {
     let notice = "
         minigrep - Copyright (C) 2026 KaoKsn
         This program comes with ABSOLUTELY NO WARRANTY.
@@ -30,19 +30,19 @@ pub fn usage() {
     "
     .white()
     .bold();
-    println!("{}", "Usage: minigrep pattern filepath".magenta().bold());
-    println!("{notice}");
+    format!(
+        "{}\n{notice}",
+        "Usage: minigrep pattern filepath".magenta().bold()
+    )
 }
 
 pub enum StatusCodes {
-    Success,
     Failure(u8, String),
 }
 
 impl Termination for StatusCodes {
     fn report(self) -> ExitCode {
         match self {
-            StatusCodes::Success => ExitCode::SUCCESS,
             StatusCodes::Failure(code, _msg) => ExitCode::from(code),
         }
     }
