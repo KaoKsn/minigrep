@@ -16,6 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+use std::process::{ExitCode, Termination};
+
+use colored::Colorize;
+
 pub fn usage() {
     let notice = "
         minigrep - Copyright (C) 2026 KaoKsn
@@ -23,7 +27,23 @@ pub fn usage() {
         This is free software, and you are welcome to redistribute it
         under certain conditions.
         For details read the license file that was given with the software.
-    ";
-    println!("Usage: minigrep pattern filepath");
+    "
+    .white()
+    .bold();
+    println!("{}", "Usage: minigrep pattern filepath".magenta().bold());
     println!("{notice}");
+}
+
+pub enum StatusCodes {
+    Success,
+    Failure(u8, String),
+}
+
+impl Termination for StatusCodes {
+    fn report(self) -> ExitCode {
+        match self {
+            StatusCodes::Success => ExitCode::SUCCESS,
+            StatusCodes::Failure(code, _msg) => ExitCode::from(code),
+        }
+    }
 }

@@ -17,21 +17,48 @@
 */
 
 pub mod helper;
-use std::{env, process};
+use std::env;
 
-fn main() {
+use colored::Colorize;
+
+use crate::helper::StatusCodes;
+
+fn main() -> StatusCodes {
     let args: Vec<String> = env::args().collect();
 
     if args.len() != 3 {
         helper::usage();
-        process::exit(1);
+        return StatusCodes::Failure(1, String::from("Usage Error"));
     }
 
     let args = minigrep::Args::new(&args[0], &args[1], &args[2]);
 
     println!(
         "Searching for pattern: `{}`, in `{}`",
-        args.query(),
-        args.path()
+        args.query().bold().yellow(),
+        args.path().bold().magenta(),
     );
+
+    let contents = match minigrep::read_content(args.path()) {
+        Ok(contents) => contents,
+        Err(e) => {
+            eprintln!(
+                "{}",
+                format!(
+                    "Failed to read `{}`. Error: {}",
+                    args.path(),
+                    e.to_string().bold()
+                )
+                .red()
+            );
+            return StatusCodes::Failure(2, String::from("Couldn't read file contents"));
+        }
+    };
+
+    println!("{} contains that following content:", args.path().blue());
+
+    for line in contents.split("\n") {
+        println!("\t{}", line);
+    }
+    StatusCodes::Success
 }
