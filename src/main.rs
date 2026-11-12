@@ -26,12 +26,9 @@ use crate::helper::StatusCodes;
 fn main() -> StatusCodes {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() != 3 {
-        helper::usage();
+    let Some(args) = minigrep::parse_configs(&args) else {
         return StatusCodes::Failure(1, String::from("Usage Error"));
-    }
-
-    let args = minigrep::Args::new(&args[0], &args[1], &args[2]);
+    };
 
     println!(
         "Searching for pattern: `{}`, in `{}`",

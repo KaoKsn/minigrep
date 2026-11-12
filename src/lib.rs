@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+pub mod helper;
 use std::fs;
 use std::io;
 
@@ -50,4 +51,24 @@ impl<'a> Args<'a> {
 /// Read the contents of a file named 'filename'.
 pub fn read_content(filename: &str) -> Result<String, io::Error> {
     fs::read_to_string(filename)
+}
+
+/// Parse the configuration options passed through the command line and return a struct which
+/// contains references to the values parsed.
+/// Returns Option\<Args\> to allow the caller to handle errors.
+pub fn parse_configs(args: &[String]) -> Option<Args<'_>> {
+    // Args contains references that are valid for lifetime 'a
+    if args.len() < 3 {
+        helper::usage();
+        return None;
+    } else if args.len() > 3 {
+        use colored::Colorize;
+        eprintln!(
+            "{}",
+            "Extraneous configurations were found. Discarding them."
+                .bold()
+                .yellow()
+        )
+    }
+    Some(Args::new(&args[0], &args[1], &args[2]))
 }
