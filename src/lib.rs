@@ -116,6 +116,18 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     matches
 }
 
+/// Case insensitive searching
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let query: String = query.to_lowercase();
+    let mut matches: Vec<&'a str> = Vec::new();
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&query) {
+            matches.push(line);
+        }
+    }
+    matches
+}
+
 /// Given a line and query, return a colored string which highlights(in yellow) query in the line.
 /// If query doesn't exists in the line, return None.
 pub fn highlight(query: &str, line: &str) -> Option<String> {
