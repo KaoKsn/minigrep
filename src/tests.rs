@@ -36,11 +36,13 @@ Dennis Ritchie created the C programming language";
 
 #[test]
 /// Test if search returns all the valid lines that contain the query string.
+/// Also tests if case sensitive is preserved when insensitivity isn't asked.
 fn test_multiple_results() {
     let query = "some";
     let contents = "\
 Can I get some sugar?
 Sure, you could get some, but not here. Sorry!
+Some people never get tired of doing the same thing.
 He created the C programming language";
 
     assert_eq!(
@@ -63,5 +65,21 @@ fn test_highlight() {
             "age".bright_yellow()
         )),
         highlight(query, line)
+    );
+}
+
+#[test]
+fn case_insensitive() {
+    let query = "rUsT";
+    let contents = "\
+Rust:
+safe, fast, productive.
+Pick three.
+Trust me.
+Pizza CrUsT";
+
+    assert_eq!(
+        vec!["Rust:", "Trust me.", "Pizza CrUsT"],
+        search_case_insensitive(query, contents)
     );
 }
