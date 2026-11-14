@@ -118,7 +118,7 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
 
 /// Given a line and query, return a colored string which highlights(in yellow) query in the line.
 /// If query doesn't exists in the line, return None.
-pub fn highlight<'a>(query: &'a str, line: &'a str) -> Option<String> {
+pub fn highlight(query: &str, line: &str) -> Option<String> {
     let Some(start) = line.find(query) else {
         return None;
     };
