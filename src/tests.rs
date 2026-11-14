@@ -31,7 +31,7 @@ fn test_query_absent() {
 Hey, there:
 Dennis Ritchie created the C programming language";
 
-    assert_eq!(Vec::<&str>::new(), search(query, contents));
+    assert_eq!(Vec::<(usize, &str)>::new(), search(query, contents));
 }
 
 #[test]
@@ -47,8 +47,8 @@ He created the C programming language";
 
     assert_eq!(
         vec![
-            "Can I get some sugar?",
-            "Sure, you could get some, but not here. Sorry!"
+            (1, "Can I get some sugar?"),
+            (2, "Sure, you could get some, but not here. Sorry!")
         ],
         search(query, contents)
     );
@@ -57,11 +57,13 @@ He created the C programming language";
 #[test]
 fn test_highlight_case_insensitive() {
     let query = "age";
-    let line = "He created the C programming language";
+    let line_no = 1;
+    let line = (line_no, "He created the C programming language");
 
     assert_eq!(
         Some(format!(
-            "He created the C programming langu{}",
+            "{}:He created the C programming langu{}",
+            line_no.to_string().green(),
             "age".bright_yellow()
         )),
         highlight(query, line, true)
@@ -71,8 +73,7 @@ fn test_highlight_case_insensitive() {
 #[test]
 fn test_highlight_case_sensitive() {
     let query = "rUst";
-    let line = "\
-Alright. Pizza CrUsT";
+    let line = (1, "Alright. Pizza CrUsT");
 
     assert_eq!(None, highlight(query, line, false));
 }
@@ -88,7 +89,7 @@ Trust me.
 Pizza CrUsT";
 
     assert_eq!(
-        vec!["Rust:", "Trust me.", "Pizza CrUsT"],
+        vec![(1, "Rust:"), (4, "Trust me."), (5, "Pizza CrUsT")],
         search_case_insensitive(query, contents)
     );
 }

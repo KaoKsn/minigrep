@@ -110,9 +110,9 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
     };
 
     // Print the line number and colored string.
-    for (line_no, line) in results.iter().enumerate() {
-        match highlight(args.query(), line, args.ign_case()) {
-            Some(value) => println!("{}: {value}", (line_no + 1).to_string().green()),
+    for result in results {
+        match highlight(args.query(), result, args.ign_case()) {
+            Some(value) => println!("{value}"),
             None => continue,
         }
     }
@@ -121,25 +121,25 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
 
 /// Search for `query` in the content provided and return the lines that contain
 /// them as a vector.
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     // References borrowed by matches must be valid until contents exists.
     // It doesn't depend on the query.
-    let mut matches: Vec<&'a str> = Vec::new();
-    for line in contents.lines() {
+    let mut matches: Vec<(usize, &'a str)> = Vec::new();
+    for (line_no, line) in contents.lines().enumerate() {
         if line.contains(query) {
-            matches.push(line);
+            matches.push((line_no + 1, line));
         }
     }
     matches
 }
 
 /// Case insensitive searching
-pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     let query: String = query.to_lowercase();
-    let mut matches: Vec<&'a str> = Vec::new();
-    for line in contents.lines() {
+    let mut matches: Vec<(usize, &'a str)> = Vec::new();
+    for (line_no, line) in contents.lines().enumerate() {
         if line.to_lowercase().contains(&query) {
-            matches.push(line);
+            matches.push((line_no + 1, line));
         }
     }
     matches
@@ -147,7 +147,10 @@ pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a st
 
 /// Given a line and query, return a colored string which highlights(in yellow) query in the line.
 /// If query doesn't exists in the line, return None.
-pub fn highlight(query: &str, line: &str, ign_case: bool) -> Option<String> {
+pub fn highlight(query: &str, result: (usize, &str), ign_case: bool) -> Option<String> {
+    let line_no = result.0;
+    let line = result.1;
+
     let start = if ign_case {
         match line.to_lowercase().find(&query.to_lowercase()) {
             Some(start) => start,
@@ -162,7 +165,8 @@ pub fn highlight(query: &str, line: &str, ign_case: bool) -> Option<String> {
 
     let end = start + query.len();
     Some(format!(
-        "{}{}{}",
+        "{}:{}{}{}",
+        line_no.to_string().green(),
         &line[0..start],
         line[start..end].bright_yellow(),
         &line[end..]
