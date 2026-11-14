@@ -55,7 +55,7 @@ He created the C programming language";
 }
 
 #[test]
-fn test_highlight() {
+fn test_highlight_case_insensitive() {
     let query = "age";
     let line = "He created the C programming language";
 
@@ -64,8 +64,17 @@ fn test_highlight() {
             "He created the C programming langu{}",
             "age".bright_yellow()
         )),
-        highlight(query, line)
+        highlight(query, line, true)
     );
+}
+
+#[test]
+fn test_highlight_case_sensitive() {
+    let query = "rUst";
+    let line = "\
+Alright. Pizza CrUsT";
+
+    assert_eq!(None, highlight(query, line, false));
 }
 
 #[test]

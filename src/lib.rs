@@ -33,13 +33,19 @@ pub struct Args<'a> {
     name: &'a str, // Name of the binary
     query: &'a str,
     path: &'a str,
+    ign_case: bool,
 }
 
 /// Implement some common required associated functions on Args
 impl<'a> Args<'a> {
     /// Create a new instance of Args type.
-    pub fn new(name: &'a str, query: &'a str, path: &'a str) -> Self {
-        Self { name, query, path }
+    pub fn new(name: &'a str, query: &'a str, path: &'a str, ign_case: bool) -> Self {
+        Self {
+            name,
+            query,
+            path,
+            ign_case,
+        }
     }
     /// getter for attribute `name` which holds the name of the binary.
     pub fn name(&self) -> &str {
@@ -52,6 +58,9 @@ impl<'a> Args<'a> {
     /// getter for attribute `path` which holds the path to the target file.
     pub fn path(&self) -> &str {
         self.path
+    }
+    pub fn ign_case(&self) -> bool {
+        self.ign_case
     }
 }
 
@@ -76,7 +85,9 @@ pub fn parse_configs(args: &[String]) -> Result<Args<'_>, StatusCodes> {
                 .yellow()
         )
     }
-    Ok(Args::new(&args[0], &args[1], &args[2]))
+    use std::env;
+    let ign_case = env::var("IGNORE_CASE").is_ok();
+    Ok(Args::new(&args[0], &args[1], &args[2], ign_case))
 }
 
 pub fn run(args: Args) -> Result<(), StatusCodes> {
@@ -92,9 +103,15 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
         }
     };
 
+    let results = if args.ign_case() {
+        search_case_insensitive(args.query(), &contents)
+    } else {
+        search(args.query(), &contents)
+    };
+
     // Print the line number and colored string.
-    for (line_no, line) in search(args.query(), &contents).iter().enumerate() {
-        match highlight(args.query(), line) {
+    for (line_no, line) in results.iter().enumerate() {
+        match highlight(args.query(), line, args.ign_case()) {
             Some(value) => println!("{}: {value}", (line_no + 1).to_string().green()),
             None => continue,
         }
@@ -130,10 +147,19 @@ pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a st
 
 /// Given a line and query, return a colored string which highlights(in yellow) query in the line.
 /// If query doesn't exists in the line, return None.
-pub fn highlight(query: &str, line: &str) -> Option<String> {
-    let Some(start) = line.find(query) else {
-        return None;
+pub fn highlight(query: &str, line: &str, ign_case: bool) -> Option<String> {
+    let start = if ign_case {
+        match line.to_lowercase().find(&query.to_lowercase()) {
+            Some(start) => start,
+            None => return None,
+        }
+    } else {
+        match line.find(query) {
+            Some(start) => start,
+            None => return None,
+        }
     };
+
     let end = start + query.len();
     Some(format!(
         "{}{}{}",
