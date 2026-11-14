@@ -19,7 +19,6 @@
 pub mod helper;
 use std::env;
 
-use colored::Colorize;
 use std::process::ExitCode;
 
 use minigrep::helper::StatusCodes;
@@ -34,12 +33,6 @@ fn main() -> ExitCode {
             return ExitCode::from(code);
         }
     };
-
-    println!(
-        "Searching for pattern: `{}`, in `{}`",
-        args.query().bold().yellow(),
-        args.path().bold().magenta(),
-    );
 
     match minigrep::run(args) {
         Ok(()) => ExitCode::SUCCESS,
