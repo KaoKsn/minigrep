@@ -18,6 +18,9 @@
 
 pub mod helper;
 
+#[cfg(test)]
+mod tests;
+
 use std::fs;
 use std::io;
 
@@ -89,10 +92,41 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
         }
     };
 
-    println!("{} contains that following content:", args.path().blue());
-
-    for line in contents.split("\n") {
-        println!("\t{}", line);
+    // Print the line number and colored string.
+    for (line_no, line) in search(args.query(), &contents).iter().enumerate() {
+        match highlight(args.query(), line) {
+            Some(value) => println!("{}: {value}", (line_no + 1).to_string().green()),
+            None => continue,
+        }
     }
     Ok(())
+}
+
+/// Search for `query` in the content provided and return the lines that contain
+/// them as a vector.
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    // References borrowed by matches must be valid until contents exists.
+    // It doesn't depend on the query.
+    let mut matches: Vec<&'a str> = Vec::new();
+    for line in contents.lines() {
+        if line.contains(query) {
+            matches.push(line);
+        }
+    }
+    matches
+}
+
+/// Given a line and query, return a colored string which highlights(in yellow) query in the line.
+/// If query doesn't exists in the line, return None.
+pub fn highlight<'a>(query: &'a str, line: &'a str) -> Option<String> {
+    let Some(start) = line.find(query) else {
+        return None;
+    };
+    let end = start + query.len();
+    Some(format!(
+        "{}{}{}",
+        &line[0..start],
+        line[start..end].bright_yellow(),
+        &line[end..]
+    ))
 }
