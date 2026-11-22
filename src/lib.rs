@@ -153,24 +153,32 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     // References borrowed by matches must be valid until contents exists.
     // It doesn't depend on the query.
-    let mut matches: Vec<(usize, &'a str)> = Vec::new();
-    for (line_no, line) in contents.lines().enumerate() {
-        if line.contains(query) {
-            matches.push((line_no + 1, line));
-        }
-    }
+
+    // enumerate, filter, and map are iterator adaptors which consume the old iterators to give
+    // the new ones. collect consumes the iterator values.
+
+    // NOTE: Avoids manually mutating a results vector and keeps each line's processing independent
+    let matches: Vec<(usize, &'a str)> = contents
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.contains(query))
+        .map(|(index, line)| (index + 1, line))
+        .collect();
     matches
 }
 
 /// Case insensitive searching
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
     let query: String = query.to_lowercase();
-    let mut matches: Vec<(usize, &'a str)> = Vec::new();
-    for (line_no, line) in contents.lines().enumerate() {
-        if line.to_lowercase().contains(&query) {
-            matches.push((line_no + 1, line));
-        }
-    }
+
+    // Use iterator adaptors which makes parallel processing easier when compared to manually
+    // managing states of a mutable vector.
+    let matches: Vec<(usize, &'a str)> = contents
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.to_lowercase().contains(&query))
+        .map(|(line_no, line)| (line_no + 1, line))
+        .collect();
     matches
 }
 
