@@ -132,11 +132,7 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
         }
     };
 
-    let results = if args.ign_case() {
-        search_case_insensitive(args.query(), &contents)
-    } else {
-        search(args.query(), &contents)
-    };
+    let results = search(args.query(), &contents, args.ign_case());
 
     // Print the line number and colored string.
     for result in results {
@@ -150,36 +146,37 @@ pub fn run(args: Args) -> Result<(), StatusCodes> {
 
 /// Search for `query` in the content provided and return the lines that contain
 /// them as a vector.
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
+pub fn search<'a>(
+    query: &str,
+    contents: &'a str,
+    ign_case: bool,
+) -> impl Iterator<Item = (usize, &'a str)> + 'a {
+    // + 'a lifetime bound for the returned iterator
+    // itself.
+
     // References borrowed by matches must be valid until contents exists.
-    // It doesn't depend on the query.
 
     // enumerate, filter, and map are iterator adaptors which consume the old iterators to give
-    // the new ones. collect consumes the iterator values.
+    // the new ones.
+
+    let query = if ign_case {
+        query.to_lowercase()
+    } else {
+        query.to_owned()
+    };
 
     // NOTE: Avoids manually mutating a results vector and keeps each line's processing independent
-    let matches: Vec<(usize, &'a str)> = contents
+    contents
         .lines()
         .enumerate()
-        .filter(|(_, line)| line.contains(query))
+        .filter(move |(_, line)| {
+            if ign_case {
+                line.to_lowercase().contains(&query)
+            } else {
+                line.contains(query.as_str())
+            }
+        })
         .map(|(index, line)| (index + 1, line))
-        .collect();
-    matches
-}
-
-/// Case insensitive searching
-pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<(usize, &'a str)> {
-    let query: String = query.to_lowercase();
-
-    // Use iterator adaptors which makes parallel processing easier when compared to manually
-    // managing states of a mutable vector.
-    let matches: Vec<(usize, &'a str)> = contents
-        .lines()
-        .enumerate()
-        .filter(|(_, line)| line.to_lowercase().contains(&query))
-        .map(|(line_no, line)| (line_no + 1, line))
-        .collect();
-    matches
 }
 
 /// Given a line and query, return a colored string which highlights(in yellow) query in the line.

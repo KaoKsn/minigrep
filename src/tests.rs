@@ -24,14 +24,21 @@ fn reads_when_a_valid_file_exists() {
 }
 
 #[test]
-/// Test if search returns an empty vector when query isn't present.
+/// Test if search returns an empty iterator when query isn't present.
 fn test_query_absent() {
     let query = "absent";
     let contents = "\
 Hey, there:
 Dennis Ritchie created the C programming language";
 
-    assert_eq!(Vec::<(usize, &str)>::new(), search(query, contents));
+    assert!(search(query, contents, false).next().is_none());
+
+    /*
+    assert_eq!(
+        search(query, contents, false).collect::<Vec<_>>(),
+        Vec::new()
+    );
+    */
 }
 
 #[test]
@@ -50,7 +57,7 @@ He created the C programming language";
             (1, "Can I get some sugar?"),
             (2, "Sure, you could get some, but not here. Sorry!")
         ],
-        search(query, contents)
+        search(query, contents, false).collect::<Vec<(usize, &str)>>()
     );
 }
 
@@ -88,8 +95,9 @@ Pick three.
 Trust me.
 Pizza CrUsT";
 
+    // Turbo fish syntax goes on the method name, before its paranthesis.
     assert_eq!(
         vec![(1, "Rust:"), (4, "Trust me."), (5, "Pizza CrUsT")],
-        search_case_insensitive(query, contents)
+        search(query, contents, true).collect::<Vec<(usize, &str)>>()
     );
 }
