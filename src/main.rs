@@ -24,9 +24,11 @@ use std::process::ExitCode;
 use minigrep::helper::StatusCodes;
 
 fn main() -> ExitCode {
-    let args: Vec<String> = env::args().collect();
+    // Pass the argument iterator to `parse_configs`; it moves the parsed strings into `Args`
 
-    let args = match minigrep::parse_configs(&args) {
+    // env::args() returns an iterator of type env::args::Args, this type implements the `Iterator`
+    // trait and returns `String` values.
+    let args = match minigrep::parse_configs(env::args()) {
         Ok(args) => args,
         Err(StatusCodes::Failure(code, msg)) => {
             eprintln!("{}", msg);

@@ -29,17 +29,17 @@ use colored::Colorize;
 
 /// Stores the components of the arguments as a struct.
 #[derive(Debug)]
-pub struct Args<'a> {
-    name: &'a str, // Name of the binary
-    query: &'a str,
-    path: &'a str,
+pub struct Args {
+    name: String, // Name of the binary
+    query: String,
+    path: String,
     ign_case: bool,
 }
 
 /// Implement some common required associated functions on Args
-impl<'a> Args<'a> {
+impl Args {
     /// Create a new instance of Args type.
-    pub fn new(name: &'a str, query: &'a str, path: &'a str, ign_case: bool) -> Self {
+    pub fn new(name: String, query: String, path: String, ign_case: bool) -> Self {
         Self {
             name,
             query,
@@ -49,15 +49,15 @@ impl<'a> Args<'a> {
     }
     /// getter for attribute `name` which holds the name of the binary.
     pub fn name(&self) -> &str {
-        self.name
+        &self.name
     }
     /// getter for attribute `query` which holds pattern to search for.
     pub fn query(&self) -> &str {
-        self.query
+        &self.query
     }
     /// getter for attribute `path` which holds the path to the target file.
     pub fn path(&self) -> &str {
-        self.path
+        &self.path
     }
     pub fn ign_case(&self) -> bool {
         self.ign_case
@@ -69,25 +69,54 @@ pub fn read_content(filename: &str) -> Result<String, io::Error> {
     fs::read_to_string(filename)
 }
 
-/// Parse the configuration options passed through the command line and return a struct which
-/// contains references to the values parsed.
-/// Returns Option\<Args\> to allow the caller to handle errors.
-pub fn parse_configs(args: &[String]) -> Result<Args<'_>, StatusCodes> {
-    // Args contains references that are valid for lifetime 'a
-    if args.len() < 3 {
-        let usage_message = helper::usage();
-        return Err(StatusCodes::Failure(1, usage_message));
-    } else if args.len() > 3 {
+/// Parses command-line arguments into an `Args` configuration that owns the parsed values while the
+/// function consumes the iterator.
+/// Returns Result\<Args, StatusCodes\> to allow the caller to handle errors.
+pub fn parse_configs(mut args: impl Iterator<Item = String>) -> Result<Args, StatusCodes> {
+    let bin = match args.next() {
+        Some(name) => name,
+        None => {
+            return Err(StatusCodes::Failure(
+                1,
+                String::from("Didn't receive the program name"),
+            ));
+        }
+    };
+
+    let query = match args.next() {
+        Some(query) => query,
+        None => {
+            return Err(StatusCodes::Failure(
+                1,
+                String::from("Didn't get a query string"),
+            ));
+        }
+    };
+
+    let path = match args.next() {
+        Some(path) => path,
+        None => {
+            return Err(StatusCodes::Failure(
+                1,
+                String::from("Didn't get a file path"),
+            ));
+        }
+    };
+
+    // Ignore any extra configuration options.
+    if args.next().is_some() {
         eprintln!(
             "{}",
             "Extraneous configurations were found. Discarding them."
                 .bold()
                 .yellow()
         )
-    }
+    };
+
     use std::env;
     let ign_case = env::var("IGNORE_CASE").is_ok();
-    Ok(Args::new(&args[0], &args[1], &args[2], ign_case))
+
+    Ok(Args::new(bin, query, path, ign_case))
 }
 
 pub fn run(args: Args) -> Result<(), StatusCodes> {
